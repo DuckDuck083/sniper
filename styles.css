@@ -7,6 +7,8 @@
 body{margin:0;background:radial-gradient(circle at 70% 10%,#263134 0,#101416 42%);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;letter-spacing:0;overflow:hidden}
 button,input{font:inherit}
 button{border:1px solid #3b484d;background:#222b2f;color:var(--text);border-radius:8px;padding:10px 14px;cursor:pointer;transition:.15s transform,.15s background}
+input[type=text],.code-entry input{border:1px solid #3b484d;background:#101416;color:var(--text);border-radius:8px;padding:12px 13px;outline:none}
+input[type=text]:focus,.code-entry input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(65,209,139,.18)}
 button:hover{background:#2b363b;transform:translateY(-1px)}
 button.primary{background:linear-gradient(135deg,#34c77d,#69d69e);border:0;color:#07120d;font-weight:800}
 button.selected,.choice.selected{outline:2px solid var(--accent);background:#263a31}
@@ -38,6 +40,7 @@ main{overflow:auto;padding:22px}.screen{display:none;min-height:calc(100vh - 44p
 .crate-box.opening{animation:spin 1.1s ease-in-out infinite}.reward-reveal{font-size:28px;font-weight:900;text-align:center;padding:18px;border-radius:8px;background:#111719;border:1px solid #3b484d;animation:reveal .55s both}
 @keyframes spin{to{transform:rotate(360deg) scale(1.08)}}@keyframes reveal{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 .rarities{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.rarities span{padding:8px 10px;border-radius:8px;background:#1c2428;font-weight:800}
+.code-panel{max-width:720px}.code-entry{display:grid;grid-template-columns:1fr auto;gap:10px}.promo-message{min-height:24px;margin-top:12px;color:var(--accent);font-weight:800}
 .common{color:var(--common)}.rare{color:var(--rare)}.epic{color:var(--epic)}.legendary{color:var(--legendary)}.mythic{color:var(--mythic)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:grid;place-items:center;z-index:20}.modal-card{width:min(540px,92vw);padding:24px;display:grid;gap:14px}.settings{display:grid;gap:18px;max-width:520px}
 @media(max-width:900px){body{overflow:auto}#app{grid-template-columns:1fr}.sidebar{position:relative}.hero,.two,.three,.four{grid-template-columns:1fr}.hero h2{font-size:34px}.hud{height:auto;flex-wrap:wrap}.match-screen canvas{height:560px}.choice-grid,.choice-grid.compact{grid-template-columns:1fr}}

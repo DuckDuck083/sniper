@@ -48,6 +48,13 @@ const achievements = [
   {id:"boss",name:"Boss Breaker",goal:"Defeat 10 bosses",check:s=>s.stats.bossesDefeated>=10,reward:2},
   {id:"collector",name:"Collector",goal:"Open 25 crates",check:s=>s.stats.cratesOpened>=25,reward:3}
 ];
+const promoCodes = {
+  WELCOME1000:{label:"Starter bankroll",public:true,apply:s=>{s.coins+=1000;s.gems+=15;s.crates+=1;return "1,000 coins, 15 gems, and 1 crate"}},
+  TOWERPOWER:{label:"Minigunner unlock",public:true,apply:s=>{unlock(s.unlockedTowers,"minigun");s.coins+=450;return "Minigunner unlocked and 450 coins"}},
+  MANGOCRATE:{label:"Crate bundle",public:true,apply:s=>{s.crates+=5;return "5 crates"}},
+  BOSSRUSH:{label:"Boss prep pack",public:true,apply:s=>{s.coins+=1500;s.gems+=35;addXP(250);return "1,500 coins, 35 gems, and 250 XP"}},
+  BASEBOOST:{label:"Base starter pack",public:true,apply:s=>{unlock(s.unlockedBases,"hq");unlock(s.unlockedBases,"depot");s.crates+=2;return "Military HQ, Supply Depot, and 2 crates"}}
+};
 
 let state = load();
 let selected = {map:"grass",difficulty:"Normal",base:"standard",loadout:["scout","sniper","shotgun","base"]};
@@ -56,7 +63,7 @@ let game = null, last = 0, raf = 0;
 function freshSave(){
   return {level:1,xp:0,coins:400,gems:20,crates:2,endless:false,lastDaily:0,settings:{volume:60,reducedFx:false},
     unlockedTowers:["scout","ranger","sniper","shotgun","base"],unlockedBases:["standard"],skins:["Default Base"],effects:["Classic Burst"],
-    stats:{kills:0,wins:0,towersPlaced:0,cratesOpened:0,bossesDefeated:0},achievements:{},mapWins:{}};
+    stats:{kills:0,wins:0,towersPlaced:0,cratesOpened:0,bossesDefeated:0},achievements:{},mapWins:{},redeemedCodes:[],devMode:false};
 }
 function load(){try{return {...freshSave(),...(JSON.parse(localStorage.getItem(saveKey))||{})}}catch{return freshSave()}}
 function save(){localStorage.setItem(saveKey,JSON.stringify(state));renderAll()}
@@ -67,10 +74,10 @@ function nav(to){$$(".screen").forEach(x=>x.classList.remove("active"));$("#"+to
 function renderAll(){
   $("#profileLevel").textContent=state.level;$("#coins").textContent=state.coins;$("#gems").textContent=state.gems;$("#xpFill").style.width=Math.min(100,state.xp/xpNeed()*100)+"%";
   $("#crateCount").textContent=state.crates;$("#dailyBtn").disabled=sameDay(state.lastDaily,Date.now());
-  renderHero();renderSetup();renderCollections();renderStats();renderInventory();
+  renderHero();renderSetup();renderCollections();renderStats();renderInventory();renderPromos();
 }
 function renderNav(){
-  const items=[["menu","Main Menu"],["play","Play"],["crates","Crates"],["collection","Collection"],["inventory","Inventory"],["stats","Stats"],["settings","Settings"]];
+  const items=[["menu","Main Menu"],["play","Play"],["crates","Crates"],["collection","Collection"],["inventory","Inventory"],["codes","Codes"],["stats","Stats"],["settings","Settings"]];
   $("#nav").innerHTML=items.map(i=>`<button data-nav="${i[0]}">${i[1]}</button>`).join("");
   $$("[data-nav]").forEach(b=>b.onclick=()=>nav(b.dataset.nav));$$("[data-go]").forEach(b=>b.onclick=()=>nav(b.dataset.go));
 }
@@ -98,22 +105,27 @@ function renderCollections(){
   $("#baseCollection").innerHTML=bases.map(b=>`<div class="card"><h3 class="${rarityClass(b.rarity)}">${b.name}</h3><small>${b.buff}</small><p>${state.unlockedBases.includes(b.id)?"Unlocked":"Locked"}</p></div>`).join("");
 }
 function renderInventory(){
-  $("#inventoryList").innerHTML=[...state.skins.map(x=>["Base Skin",x]),...state.effects.map(x=>["Effect",x]),["Crates",state.crates],["Coins",state.coins],["Gems",state.gems]].map(i=>`<div class="card"><h3>${i[0]}</h3><small>${i[1]}</small></div>`).join("");
+  $("#inventoryList").innerHTML=[...state.skins.map(x=>["Base Skin",x]),...state.effects.map(x=>["Effect",x]),["Crates",state.crates],["Coins",state.coins],["Gems",state.gems],["Dev Mode",state.devMode?"Active":"Off"]].map(i=>`<div class="card"><h3>${i[0]}</h3><small>${i[1]}</small></div>`).join("");
 }
 function renderStats(){
   $("#statsGrid").innerHTML=Object.entries(state.stats).map(([k,v])=>`<div class="stat-tile"><b>${v}</b><span>${label(k)}</span></div>`).join("");
   $("#achievementList").innerHTML=achievements.map(a=>`<div class="card"><h3>${a.name}</h3><small>${a.goal}</small><p>${state.achievements[a.id]?"Claimed":"Reward: "+a.reward+" crate(s)"}</p></div>`).join("");
 }
+function renderPromos(){
+  const list=$("#promoList");if(!list)return;
+  list.innerHTML=Object.entries(promoCodes).filter(([,c])=>c.public).map(([code,c])=>`<div class="card"><h3>${code}</h3><small>${c.label}</small><p>${state.redeemedCodes.includes(code)?"Redeemed":"Available"}</p></div>`).join("");
+}
 
 function startMatch(){
   if(selected.loadout.length===0)return;
   const map=maps.find(m=>m.id===selected.map), base=bases.find(b=>b.id===selected.base), diff=difficulties[selected.difficulty];
-  game={map,base,diff,wave:0,cash:base.id==="depot"?720:600,health:base.hp,enemies:[],shots:[],towers:[],units:[],particles:[],numbers:[],pads:map.pads.map(p=>({x:p[0],y:p[1],tower:null})),spawnTimer:0,countdown:4,paused:false,speed:1,selectedTower:null,placing:selected.loadout[0],ended:false,kills:0,bosses:0};
+  game={map,base,diff,wave:0,cash:state.devMode?999999:base.id==="depot"?720:600,health:base.hp,enemies:[],shots:[],towers:[],units:[],particles:[],numbers:[],pads:map.pads.map(p=>({x:p[0],y:p[1],tower:null})),spawnTimer:0,countdown:4,paused:false,speed:1,selectedTower:null,placing:selected.loadout[0],ended:false,kills:0,bosses:0};
   nav("match");renderTowerBar();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
 }
 function loop(ts){if(!game)return;const dt=Math.min(.05,(ts-last)/1000)*(game.paused?0:game.speed);last=ts;update(dt);draw();raf=requestAnimationFrame(loop)}
 function update(dt){
   if(game.ended)return;
+  if(state.devMode){game.cash=999999;game.health=Math.max(game.health,game.base.hp)}
   if(game.countdown>0){game.countdown-=dt;if(game.countdown<=0)nextWave();updateHud();return}
   spawn(dt);moveEnemies(dt);updateTowers(dt);updateUnits(dt);updateParticles(dt);updateHud();
   if(game.enemies.length===0&&game.spawnTimer<=0&&game.toSpawn<=0){if(game.wave>=game.diff.waves)endMatch(true);else game.countdown=$("#autoskip").checked?1.2:9}
@@ -282,6 +294,22 @@ function rollReward(){
 }
 function applyReward(r){if(r.type==="Tower")state.unlockedTowers.push(r.id);else if(r.type==="Base")state.unlockedBases.push(r.id);else if(r.type==="Currency")state.coins+=r.coins;else if(r.name.includes("Skin"))state.skins.push(r.name);else state.effects.push(r.name)}
 function daily(){if(sameDay(state.lastDaily,Date.now()))return;state.lastDaily=Date.now();state.coins+=250;state.gems+=5;state.crates++;save();showModal("Daily Reward","250 coins<br>5 gems<br>1 crate")}
+function redeemPromo(){
+  const input=$("#promoInput"), msg=$("#promoMessage"), code=(input.value||"").trim().toUpperCase().replace(/\s+/g,"");
+  if(!code){msg.textContent="Enter a code first.";return}
+  const promo=promoCodes[code];
+  if(!promo){msg.textContent="Invalid code.";return}
+  if(state.redeemedCodes.includes(code)){msg.textContent="That code was already redeemed.";return}
+  const reward=promo.apply(state);state.redeemedCodes.push(code);checkAchievements();save();
+  input.value="";msg.textContent=`Redeemed ${code}: ${reward}.`;
+  showModal("Code Redeemed",`${code}<br>${reward}`);
+}
+function activateDevMode(){
+  state.devMode=true;state.coins=999999999;state.gems=999999;state.crates=99;state.endless=true;
+  towers.forEach(t=>unlock(state.unlockedTowers,t.id));bases.forEach(b=>unlock(state.unlockedBases,b.id));
+  save();showModal("Testing Dev Mode","Infinite coins are enabled. Match health is protected while dev mode is active.");
+}
+function unlock(list,id){if(!list.includes(id))list.push(id)}
 function sameDay(a,b){return new Date(a).toDateString()===new Date(b).toDateString()}
 function showModal(t,b){$("#modalTitle").textContent=t;$("#modalBody").innerHTML=b;$("#modal").classList.remove("hidden")}
 function rarityClass(r){return r.toLowerCase().replace(" ","")}
@@ -291,7 +319,9 @@ function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function progress(e){return e.i*10000+e.x+e.y}
 function remove(a,x){const i=a.indexOf(x);if(i>=0)a.splice(i,1)}
 
-$("#beginMatch").onclick=startMatch;$("#pauseBtn").onclick=()=>game.paused=!game.paused;$("#speedBtn").onclick=()=>{game.speed=game.speed===1?2:game.speed===2?3:1;$("#speedBtn").textContent=game.speed+"x"};$("#openCrate").onclick=openCrate;$("#dailyBtn").onclick=daily;$("#modalClose").onclick=()=>$("#modal").classList.add("hidden");
+$("#beginMatch").onclick=startMatch;$("#pauseBtn").onclick=()=>game.paused=!game.paused;$("#speedBtn").onclick=()=>{game.speed=game.speed===1?2:game.speed===2?3:1;$("#speedBtn").textContent=game.speed+"x"};$("#openCrate").onclick=openCrate;$("#dailyBtn").onclick=daily;$("#redeemCode").onclick=redeemPromo;$("#promoInput").onkeydown=e=>{if(e.key==="Enter")redeemPromo()};$("#modalClose").onclick=()=>$("#modal").classList.add("hidden");
 $("#volume").oninput=e=>{state.settings.volume=+e.target.value;save()};$("#reducedFx").onchange=e=>{state.settings.reducedFx=e.target.checked;save()};$("#resetSave").onclick=()=>{if(confirm("Reset all progression?")){state=freshSave();save();nav("menu")}};
 $("#volume").value=state.settings.volume;$("#reducedFx").checked=state.settings.reducedFx;
+let secretBuffer="";
+document.addEventListener("keydown",e=>{if(e.target&&["INPUT","TEXTAREA"].includes(e.target.tagName))return;secretBuffer=(secretBuffer+e.key.toLowerCase()).slice(-12);if(secretBuffer.endsWith("mustardmango"))activateDevMode()});
 renderNav();renderAll();
