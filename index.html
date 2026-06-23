@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Defense Ascension</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">DA</div>
+        <div>
+          <h1>Defense Ascension</h1>
+          <p>Collect. Upgrade. Survive.</p>
+        </div>
+      </div>
+      <nav id="nav"></nav>
+      <div class="profile-card">
+        <div class="row"><span>Level</span><b id="profileLevel">1</b></div>
+        <div class="xpbar"><i id="xpFill"></i></div>
+        <div class="row"><span>Coins</span><b id="coins">0</b></div>
+        <div class="row"><span>Gems</span><b id="gems">0</b></div>
+        <button id="dailyBtn" class="primary">Daily Reward</button>
+      </div>
+    </aside>
+
+    <main>
+      <section id="menu" class="screen active">
+        <div class="hero">
+          <div class="hero-copy">
+            <h2>Command a collectible tower army.</h2>
+            <p>Choose a map, build from pads, deploy spawner towers, defeat bosses, earn crates, and unlock endless mode.</p>
+            <div class="hero-actions">
+              <button class="primary" data-go="play">Start Match</button>
+              <button data-go="crates">Open Crates</button>
+            </div>
+          </div>
+          <div class="hero-stats" id="heroStats"></div>
+        </div>
+        <div class="grid three" id="featuredCards"></div>
+      </section>
+
+      <section id="play" class="screen">
+        <div class="setup">
+          <div>
+            <h2>Mission Setup</h2>
+            <p>Select a battlefield, difficulty, base, and loadout.</p>
+          </div>
+          <button class="primary" id="beginMatch">Deploy</button>
+        </div>
+        <div class="grid two">
+          <div class="panel">
+            <h3>Maps</h3>
+            <div id="mapSelect" class="choice-grid"></div>
+          </div>
+          <div class="panel">
+            <h3>Difficulty</h3>
+            <div id="difficultySelect" class="choice-grid compact"></div>
+            <h3>Base</h3>
+            <div id="baseSelect" class="choice-grid compact"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Tower Loadout</h3>
+          <div id="loadoutSelect" class="tower-list"></div>
+        </div>
+      </section>
+
+      <section id="match" class="screen match-screen">
+        <div class="hud">
+          <div><b id="hudMap">Grasslands</b><span id="hudWave">Wave 1</span></div>
+          <div>Cash <b id="hudCash">$0</b></div>
+          <div>Base <b id="hudHealth">100</b></div>
+          <div>Countdown <b id="hudCountdown">0</b></div>
+          <button id="pauseBtn">Pause</button>
+          <button id="speedBtn">1x</button>
+          <label><input type="checkbox" id="autoskip"> Auto-skip</label>
+        </div>
+        <div class="battle-wrap">
+          <canvas id="game" width="1100" height="680"></canvas>
+          <div class="tower-bar" id="towerBar"></div>
+          <div class="upgrade-panel hidden" id="upgradePanel"></div>
+          <div class="boss-intro hidden" id="bossIntro"></div>
+        </div>
+      </section>
+
+      <section id="crates" class="screen">
+        <div class="setup">
+          <div>
+            <h2>Crate Room</h2>
+            <p>Open victory and achievement crates for towers, skins, effects, and currency.</p>
+          </div>
+          <div class="crate-count">Crates <b id="crateCount">0</b></div>
+        </div>
+        <div class="crate-stage">
+          <div id="crateBox" class="crate-box">?</div>
+          <div id="rewardReveal" class="reward-reveal hidden"></div>
+          <button class="primary" id="openCrate">Open Crate</button>
+        </div>
+        <div class="rarities">
+          <span class="common">Common 60%</span><span class="rare">Rare 25%</span><span class="epic">Epic 10%</span><span class="legendary">Legendary 4%</span><span class="mythic">Mythic 1%</span>
+        </div>
+      </section>
+
+      <section id="collection" class="screen">
+        <h2>Tower Collection</h2>
+        <div id="towerCollection" class="grid four"></div>
+        <h2>Base Collection</h2>
+        <div id="baseCollection" class="grid four"></div>
+      </section>
+
+      <section id="inventory" class="screen">
+        <h2>Inventory</h2>
+        <div id="inventoryList" class="grid three"></div>
+      </section>
+
+      <section id="stats" class="screen">
+        <h2>Statistics & Achievements</h2>
+        <div id="statsGrid" class="grid four"></div>
+        <div id="achievementList" class="grid two"></div>
+      </section>
+
+      <section id="settings" class="screen">
+        <h2>Settings</h2>
+        <div class="panel settings">
+          <label>Effects Volume <input id="volume" type="range" min="0" max="100"></label>
+          <label><input id="reducedFx" type="checkbox"> Reduced visual effects</label>
+          <button id="resetSave">Reset Save</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+      <button class="primary" id="modalClose">Continue</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
