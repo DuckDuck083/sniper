@@ -6,11 +6,11 @@ const rarities = [
   ["Common", .60, "common"], ["Rare", .25, "rare"], ["Epic", .10, "epic"], ["Legendary", .04, "legendary"], ["Mythic", .01, "mythic"]
 ];
 const maps = [
-  {id:"grass",name:"Grasslands",theme:"#315a42",reward:90,path:[[0,390],[210,390],[210,160],[470,160],[470,500],[760,500],[760,260],[1100,260]],pads:[[160,310],[315,155],[410,245],[590,500],[720,405],[850,245],[965,330]]},
-  {id:"desert",name:"Desert Outpost",theme:"#7f6838",reward:120,path:[[0,210],[250,210],[250,470],[560,470],[560,170],[830,170],[830,390],[1100,390]],pads:[[150,130],[310,325],[465,560],[620,310],[760,105],[910,310],[1000,470]]},
-  {id:"snow",name:"Snow Valley",theme:"#4b7682",reward:140,path:[[0,505],[180,505],[180,310],[390,310],[390,115],[670,115],[670,450],[1100,450]],pads:[[105,425],[250,245],[360,390],[520,105],[650,220],[790,455],[930,365]]},
-  {id:"industrial",name:"Industrial Complex",theme:"#555d62",reward:170,path:[[0,335],[170,335],[170,145],[425,145],[425,355],[650,355],[650,555],[910,555],[910,250],[1100,250]],pads:[[90,255],[260,140],[360,250],[535,430],[710,550],[830,460],[980,220]]},
-  {id:"volcano",name:"Volcano Core",theme:"#743236",reward:220,path:[[0,170],[190,170],[190,520],[410,520],[410,300],[610,300],[610,105],[855,105],[855,420],[1100,420]],pads:[[105,105],[245,360],[360,590],[505,235],[650,170],[770,90],[945,430]]}
+  {id:"grass",name:"Grasslands",theme:"#315a42",reward:90,path:[[0,390],[210,390],[210,160],[470,160],[470,500],[760,500],[760,260],[1100,260]],pads:[[105,315],[160,465],[315,155],[330,325],[410,245],[525,115],[590,500],[655,365],[720,405],[850,245],[930,160],[965,330]]},
+  {id:"desert",name:"Desert Outpost",theme:"#7f6838",reward:120,path:[[0,210],[250,210],[250,470],[560,470],[560,170],[830,170],[830,390],[1100,390]],pads:[[95,135],[150,300],[310,325],[370,520],[465,560],[620,310],[680,155],[760,105],[760,285],[910,310],[980,220],[1000,470]]},
+  {id:"snow",name:"Snow Valley",theme:"#4b7682",reward:140,path:[[0,505],[180,505],[180,310],[390,310],[390,115],[670,115],[670,450],[1100,450]],pads:[[105,425],[125,590],[250,245],[305,390],[360,390],[455,205],[520,105],[590,245],[650,220],[790,455],[865,350],[930,520]]},
+  {id:"industrial",name:"Industrial Complex",theme:"#555d62",reward:170,path:[[0,335],[170,335],[170,145],[425,145],[425,355],[650,355],[650,555],[910,555],[910,250],[1100,250]],pads:[[90,255],[105,425],[260,140],[300,245],[360,250],[505,145],[535,430],[710,550],[730,360],[830,460],[980,220],[1000,340]]},
+  {id:"volcano",name:"Volcano Core",theme:"#743236",reward:220,path:[[0,170],[190,170],[190,520],[410,520],[410,300],[610,300],[610,105],[855,105],[855,420],[1100,420]],pads:[[105,105],[105,300],[245,360],[300,585],[360,590],[505,235],[535,395],[650,170],[710,80],[770,190],[945,430],[990,325]]}
 ];
 const difficulties = {Normal:{mult:1,waves:15},Hard:{mult:1.45,waves:20},Endless:{mult:1.8,waves:999,locked:true}};
 const bases = [
@@ -23,12 +23,18 @@ const bases = [
 ];
 const towers = [
   {id:"scout",name:"Scout",rarity:"Common",cost:90,range:120,rate:.55,dmg:10,type:"bullet",desc:"Cheap starter tower."},
+  {id:"ranger",name:"Ranger",rarity:"Common",cost:125,range:145,rate:.7,dmg:16,type:"bullet",desc:"Balanced early-game rifle tower."},
   {id:"sniper",name:"Sniper",rarity:"Common",cost:180,range:260,rate:1.4,dmg:45,type:"bullet",desc:"Long range heavy shots."},
   {id:"shotgun",name:"Shotgunner",rarity:"Rare",cost:240,range:105,rate:.9,dmg:35,type:"splash",desc:"Close burst damage."},
   {id:"minigun",name:"Minigunner",rarity:"Rare",cost:360,range:150,rate:.16,dmg:8,type:"bullet",desc:"Very high fire rate."},
+  {id:"mortar",name:"Mortar Crew",rarity:"Rare",cost:430,range:230,rate:1.8,dmg:115,type:"splash",desc:"Slow artillery with huge blast radius."},
+  {id:"tesla",name:"Tesla Coil",rarity:"Epic",cost:540,range:145,rate:.45,dmg:34,type:"laser",desc:"Electric tower with rapid zaps."},
+  {id:"flame",name:"Flamethrower",rarity:"Epic",cost:480,range:110,rate:.22,dmg:13,type:"toxic",desc:"Short range burning damage over time."},
   {id:"rocket",name:"Rocket Launcher",rarity:"Epic",cost:500,range:180,rate:1.2,dmg:90,type:"splash",desc:"Explosive area hits."},
   {id:"freeze",name:"Freeze Tower",rarity:"Epic",cost:420,range:130,rate:.8,dmg:12,type:"freeze",desc:"Slows enemies."},
   {id:"laser",name:"Laser Tower",rarity:"Legendary",cost:720,range:190,rate:.08,dmg:10,type:"laser",desc:"Sustained burn beam."},
+  {id:"railgun",name:"Railgunner",rarity:"Legendary",cost:880,range:275,rate:1.65,dmg:185,type:"bullet",desc:"Piercing late-game burst damage."},
+  {id:"plasma",name:"Plasma Reactor",rarity:"Mythic",cost:1250,range:210,rate:.18,dmg:22,type:"laser",desc:"Mythic reactor that melts bosses."},
   {id:"toxic",name:"Toxic Tower",rarity:"Epic",cost:460,range:155,rate:.7,dmg:20,type:"toxic",desc:"Poison damage over time."},
   {id:"base",name:"Military Base",rarity:"Rare",cost:560,range:0,rate:4,dmg:0,type:"spawner",unit:"Soldier",desc:"Spawns soldiers."},
   {id:"barracks",name:"Barracks",rarity:"Epic",cost:760,range:0,rate:4.8,dmg:0,type:"spawner",unit:"Riflemen",desc:"Spawns riflemen and medics."},
@@ -49,7 +55,7 @@ let game = null, last = 0, raf = 0;
 
 function freshSave(){
   return {level:1,xp:0,coins:400,gems:20,crates:2,endless:false,lastDaily:0,settings:{volume:60,reducedFx:false},
-    unlockedTowers:["scout","sniper","shotgun","base"],unlockedBases:["standard"],skins:["Default Base"],effects:["Classic Burst"],
+    unlockedTowers:["scout","ranger","sniper","shotgun","base"],unlockedBases:["standard"],skins:["Default Base"],effects:["Classic Burst"],
     stats:{kills:0,wins:0,towersPlaced:0,cratesOpened:0,bossesDefeated:0},achievements:{},mapWins:{}};
 }
 function load(){try{return {...freshSave(),...(JSON.parse(localStorage.getItem(saveKey))||{})}}catch{return freshSave()}}
@@ -86,7 +92,7 @@ function renderSetup(){
   $$("[data-base]").forEach(e=>e.onclick=()=>{if(state.unlockedBases.includes(e.dataset.base)){selected.base=e.dataset.base;renderSetup()}});
   $$("[data-tower]").forEach(e=>e.onclick=()=>toggleLoadout(e.dataset.tower));
 }
-function toggleLoadout(id){let l=selected.loadout;if(l.includes(id))l.splice(l.indexOf(id),1);else if(l.length<6)l.push(id);renderSetup()}
+function toggleLoadout(id){let l=selected.loadout;if(l.includes(id))l.splice(l.indexOf(id),1);else if(l.length<8)l.push(id);renderSetup()}
 function renderCollections(){
   $("#towerCollection").innerHTML=towers.map(t=>`<div class="card"><h3 class="${rarityClass(t.rarity)}">${t.name}</h3><small>${t.desc}</small><p>${state.unlockedTowers.includes(t.id)?"Unlocked":"Locked"}</p></div>`).join("");
   $("#baseCollection").innerHTML=bases.map(b=>`<div class="card"><h3 class="${rarityClass(b.rarity)}">${b.name}</h3><small>${b.buff}</small><p>${state.unlockedBases.includes(b.id)?"Unlocked":"Locked"}</p></div>`).join("");
@@ -189,7 +195,67 @@ function drawGrid(){ctx.globalAlpha=.12;ctx.strokeStyle="#fff";for(let x=0;x<can
 function drawPath(){ctx.strokeStyle="#2c2421";ctx.lineWidth=52;ctx.lineJoin="round";ctx.lineCap="round";pathLine();ctx.stroke();ctx.strokeStyle="#8b7760";ctx.lineWidth=38;pathLine();ctx.stroke()}
 function pathLine(){ctx.beginPath();game.map.path.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]))}
 function drawPad(p){ctx.fillStyle=p.tower?"#273238":"rgba(255,255,255,.18)";ctx.strokeStyle=p.tower?"#41d18b":"#d7e2dd";ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,30,0,Math.PI*2);ctx.fill();ctx.stroke()}
-function drawTower(t){ctx.fillStyle=color(t.rarity);ctx.beginPath();ctx.arc(t.x,t.y,22+t.level,0,Math.PI*2);ctx.fill();ctx.fillStyle="#101416";ctx.fillText(t.level+1,t.x-4,t.y+5);if(t===game.selectedTower){ctx.strokeStyle="#fff";ctx.beginPath();ctx.arc(t.x,t.y,t.range||38,0,Math.PI*2);ctx.stroke()}}
+function drawTower(t){
+  const c=color(t.rarity), x=t.x, y=t.y, size=22+t.level*.9;
+  if(t===game.selectedTower){ctx.strokeStyle="rgba(255,255,255,.75)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,t.range||45,0,Math.PI*2);ctx.stroke()}
+  ctx.save();
+  ctx.shadowColor=c;ctx.shadowBlur=12;
+  ctx.fillStyle="#121719";ctx.strokeStyle=c;ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(x,y,size+8,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.fillStyle=c;ctx.strokeStyle="#07120d";ctx.lineWidth=3;
+  if(t.type==="spawner"){
+    ctx.fillRect(x-20,y-16,40,32);ctx.strokeRect(x-20,y-16,40,32);
+    ctx.fillStyle="#d9e5e1";ctx.fillRect(x-13,y-6,9,12);ctx.fillRect(x+4,y-6,9,12);
+    ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x-24,y-16);ctx.lineTo(x,y-34);ctx.lineTo(x+24,y-16);ctx.closePath();ctx.fill();ctx.stroke();
+  }else if(t.id==="sniper"||t.id==="railgun"){
+    ctx.fillRect(x-9,y-19,18,38);ctx.strokeRect(x-9,y-19,18,38);
+    ctx.beginPath();ctx.moveTo(x+8,y-8);ctx.lineTo(x+38,y-22);ctx.lineWidth=t.id==="railgun"?8:5;ctx.stroke();
+  }else if(t.id==="minigun"){
+    ctx.beginPath();ctx.arc(x,y,20,0,Math.PI*2);ctx.fill();ctx.stroke();
+    for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+8,y+i*7);ctx.lineTo(x+36,y+i*7);ctx.stroke()}
+  }else if(t.id==="rocket"||t.id==="mortar"){
+    ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillRect(x-8,y-34,16,34);ctx.strokeRect(x-8,y-34,16,34);
+    ctx.beginPath();ctx.moveTo(x-8,y-34);ctx.lineTo(x,y-48);ctx.lineTo(x+8,y-34);ctx.closePath();ctx.fill();ctx.stroke();
+  }else if(t.id==="freeze"||t.id==="tesla"){
+    ctx.beginPath();ctx.moveTo(x,y-28);ctx.lineTo(x+25,y);ctx.lineTo(x,y+28);ctx.lineTo(x-25,y);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle="#eaffff";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-12,y);ctx.lineTo(x+2,y-12);ctx.lineTo(x-1,y+7);ctx.lineTo(x+14,y-3);ctx.stroke();
+  }else if(t.id==="laser"||t.id==="plasma"){
+    ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.strokeStyle="#fff";ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x+12,y);ctx.lineTo(x+34,y);ctx.stroke();
+  }else if(t.id==="toxic"||t.id==="flame"){
+    ctx.beginPath();ctx.roundRect(x-18,y-20,36,40,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle="#07120d";ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x+14,y-5);ctx.lineTo(x+36,y);ctx.lineTo(x+14,y+5);ctx.closePath();ctx.fill();
+  }else if(t.id==="shotgun"){
+    ctx.fillRect(x-16,y-15,32,30);ctx.strokeRect(x-16,y-15,32,30);
+    ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x+10,y-6);ctx.lineTo(x+33,y-14);ctx.moveTo(x+10,y+6);ctx.lineTo(x+33,y+14);ctx.stroke();
+  }else{
+    ctx.beginPath();ctx.arc(x,y,20,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x+6,y-4);ctx.lineTo(x+31,y-10);ctx.stroke();
+  }
+  drawUpgradePips(t,x,y,size);
+  drawTowerLabel(t,x,y);
+  ctx.restore();
+}
+function drawUpgradePips(t,x,y,size){
+  for(let i=0;i<5;i++){
+    ctx.fillStyle=i<t.level?"#f2c14e":"#263134";
+    ctx.beginPath();ctx.arc(x-16+i*8,y+size+13,3,0,Math.PI*2);ctx.fill();
+  }
+}
+function drawTowerLabel(t,x,y){
+  ctx.font="700 11px Segoe UI, Arial";ctx.textAlign="center";ctx.textBaseline="middle";
+  const text=towerShort(t), w=Math.max(42,ctx.measureText(text).width+12);
+  ctx.fillStyle="rgba(7,18,13,.86)";ctx.fillRect(x-w/2,y+37,w,17);
+  ctx.strokeStyle="rgba(255,255,255,.18)";ctx.strokeRect(x-w/2,y+37,w,17);
+  ctx.fillStyle="#edf3f0";ctx.fillText(text,x,y+45.5);
+}
+function towerShort(t){
+  return ({scout:"Scout",ranger:"Ranger",sniper:"Sniper",shotgun:"Shotgun",minigun:"Mini",mortar:"Mortar",tesla:"Tesla",flame:"Flame",rocket:"Rocket",freeze:"Freeze",laser:"Laser",railgun:"Railgun",plasma:"Plasma",toxic:"Toxic",base:"Mil Base",barracks:"Barracks",tank:"Tank Fac",commandcenter:"Command"})[t.id]||t.name;
+}
 function drawEnemy(e){ctx.fillStyle=e.boss?"#9b1d2d":e.kind==="Fast"?"#5db7ff":e.kind==="Heavy"?"#6b5b4b":e.kind==="Flying"?"#dfe9ff":e.kind==="Stealth"?"#6f5b8f":"#30363a";ctx.beginPath();ctx.arc(e.x,e.y,e.boss?24:15,0,Math.PI*2);ctx.fill();bar(e.x-24,e.y-32,48,5,e.hp/e.max,"#ff5d5d");if(e.shield>0)bar(e.x-24,e.y-39,48,4,e.shield/(e.max*.45),"#8be4ff")}
 function drawUnit(u){ctx.fillStyle="#41d18b";ctx.fillRect(u.x-11,u.y-11,22,22);bar(u.x-18,u.y-24,36,4,u.hp/u.max,"#41d18b")}
 function drawShot(s){ctx.strokeStyle=s.color;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.tx,s.ty);ctx.stroke()}
