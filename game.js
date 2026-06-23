@@ -57,9 +57,12 @@ const promoCodes = {
 };
 
 let state = load();
-let selected = {map:"grass",difficulty:"Normal",base:"standard",loadout:["scout","sniper","shotgun","base"]};
+let selected = freshSelection();
 let game = null, last = 0, raf = 0;
 
+function freshSelection(){
+  return {map:"grass",difficulty:"Normal",base:"standard",loadout:["scout","ranger","sniper","shotgun","base"]};
+}
 function freshSave(){
   return {level:1,xp:0,coins:400,gems:20,crates:2,endless:false,lastDaily:0,settings:{volume:60,reducedFx:false},
     unlockedTowers:["scout","ranger","sniper","shotgun","base"],unlockedBases:["standard"],skins:["Default Base"],effects:["Classic Burst"],
@@ -67,6 +70,16 @@ function freshSave(){
 }
 function load(){try{return {...freshSave(),...(JSON.parse(localStorage.getItem(saveKey))||{})}}catch{return freshSave()}}
 function save(){localStorage.setItem(saveKey,JSON.stringify(state));renderAll()}
+function hardReset(){
+  cancelAnimationFrame(raf);game=null;last=0;secretBuffer="";
+  localStorage.removeItem(saveKey);
+  state=freshSave();selected=freshSelection();
+  localStorage.setItem(saveKey,JSON.stringify(state));
+  $("#volume").value=state.settings.volume;$("#reducedFx").checked=state.settings.reducedFx;
+  $("#promoInput").value="";$("#promoMessage").textContent="";
+  $("#upgradePanel").classList.add("hidden");$("#bossIntro").classList.add("hidden");$("#modal").classList.add("hidden");
+  nav("menu");renderAll();
+}
 function xpNeed(){return 100+state.level*60}
 function addXP(n){state.xp+=n;while(state.xp>=xpNeed()){state.xp-=xpNeed();state.level++;state.coins+=75;state.gems+=3}}
 function nav(to){$$(".screen").forEach(x=>x.classList.remove("active"));$("#"+to).classList.add("active");if(to==="match")return;renderAll()}
@@ -320,7 +333,7 @@ function progress(e){return e.i*10000+e.x+e.y}
 function remove(a,x){const i=a.indexOf(x);if(i>=0)a.splice(i,1)}
 
 $("#beginMatch").onclick=startMatch;$("#pauseBtn").onclick=()=>game.paused=!game.paused;$("#speedBtn").onclick=()=>{game.speed=game.speed===1?2:game.speed===2?3:1;$("#speedBtn").textContent=game.speed+"x"};$("#openCrate").onclick=openCrate;$("#dailyBtn").onclick=daily;$("#redeemCode").onclick=redeemPromo;$("#promoInput").onkeydown=e=>{if(e.key==="Enter")redeemPromo()};$("#modalClose").onclick=()=>$("#modal").classList.add("hidden");
-$("#volume").oninput=e=>{state.settings.volume=+e.target.value;save()};$("#reducedFx").onchange=e=>{state.settings.reducedFx=e.target.checked;save()};$("#resetSave").onclick=()=>{if(confirm("Reset all progression?")){state=freshSave();save();nav("menu")}};
+$("#volume").oninput=e=>{state.settings.volume=+e.target.value;save()};$("#reducedFx").onchange=e=>{state.settings.reducedFx=e.target.checked;save()};$("#resetSave").onclick=()=>{if(confirm("Reset all progression?"))hardReset()};
 $("#volume").value=state.settings.volume;$("#reducedFx").checked=state.settings.reducedFx;
 let secretBuffer="";
 document.addEventListener("keydown",e=>{if(e.target&&["INPUT","TEXTAREA"].includes(e.target.tagName))return;secretBuffer=(secretBuffer+e.key.toLowerCase()).slice(-12);if(secretBuffer.endsWith("mustardmango"))activateDevMode()});
