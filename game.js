@@ -41,6 +41,20 @@ const towers = [
   {id:"tank",name:"Tank Factory",rarity:"Legendary",cost:1050,range:0,rate:6.5,dmg:0,type:"spawner",unit:"Tank",desc:"Spawns armored vehicles."},
   {id:"commandcenter",name:"Elite Command Center",rarity:"Mythic",cost:1450,range:0,rate:7.5,dmg:0,type:"spawner",unit:"Commando",desc:"Spawns elite commandos."}
 ];
+const skinCatalog = [
+  {id:"default",name:"Default Finish",rarity:"Common",colors:["#c9d0d3","#41d18b"],glow:"#41d18b",pattern:"clean"},
+  {id:"forest",name:"Forest Camo",rarity:"Common",colors:["#2f6d46","#a5c86f"],glow:"#8dcf63",pattern:"stripe"},
+  {id:"urban",name:"Urban Alloy",rarity:"Common",colors:["#7b8c93","#d9e5e1"],glow:"#9fb0aa",pattern:"plate"},
+  {id:"arctic",name:"Arctic Crystal",rarity:"Rare",colors:["#dff8ff","#5db7ff"],glow:"#8be4ff",pattern:"crystal"},
+  {id:"ember",name:"Ember Forged",rarity:"Rare",colors:["#ff6b35","#f2c14e"],glow:"#ff8f3d",pattern:"flame"},
+  {id:"venom",name:"Venom Reactor",rarity:"Epic",colors:["#20282c","#6dff8a"],glow:"#6dff8a",pattern:"toxic"},
+  {id:"void",name:"Void Nebula",rarity:"Epic",colors:["#19142a","#b871ff"],glow:"#b871ff",pattern:"stars"},
+  {id:"solar",name:"Solar Crown",rarity:"Legendary",colors:["#fff0a6","#ff8b2e"],glow:"#ffb02e",pattern:"halo"},
+  {id:"dragon",name:"Dragon Scale",rarity:"Legendary",colors:["#53202c","#ff4b4b"],glow:"#ff5d5d",pattern:"scale"},
+  {id:"quantum",name:"Quantum Prism",rarity:"Mythic",colors:["#8be4ff","#ff4fd8"],glow:"#ff4fd8",pattern:"prism"},
+  {id:"glitch",name:"Glitch Matrix",rarity:"Mythic",colors:["#08110f","#41d18b"],glow:"#41d18b",pattern:"glitch"}
+];
+const shopTabs = ["featured","towers","skins","boosts"];
 const achievements = [
   {id:"firstWin",name:"First Victory",goal:"Win one match",check:s=>s.stats.wins>=1,reward:1},
   {id:"slayer",name:"Enemy Slayer",goal:"Defeat 500 enemies",check:s=>s.stats.kills>=500,reward:2},
@@ -65,10 +79,28 @@ function freshSelection(){
 }
 function freshSave(){
   return {level:1,xp:0,coins:400,gems:20,crates:2,endless:false,lastDaily:0,settings:{volume:60,reducedFx:false},
-    unlockedTowers:["scout","ranger","sniper","shotgun","base"],unlockedBases:["standard"],skins:["Default Base"],effects:["Classic Burst"],
+    unlockedTowers:["scout","ranger","sniper","shotgun","base"],unlockedBases:["standard"],
+    skins:["Default Finish","Forest Camo"],ownedSkins:["default","forest"],towerSkins:{},effects:["Classic Burst"],
+    extraLives:0,seasonPass:false,upgrades:{startingCash:0,damage:0,discount:0},shopTab:"featured",
     stats:{kills:0,wins:0,towersPlaced:0,cratesOpened:0,bossesDefeated:0},achievements:{},mapWins:{},redeemedCodes:[],devMode:false};
 }
-function load(){try{return {...freshSave(),...(JSON.parse(localStorage.getItem(saveKey))||{})}}catch{return freshSave()}}
+function load(){try{return migrateSave({...freshSave(),...(JSON.parse(localStorage.getItem(saveKey))||{})})}catch{return freshSave()}}
+function migrateSave(s){
+  s.ownedSkins=s.ownedSkins||["default","forest"];
+  s.skins=s.skins||["Default Finish","Forest Camo"];
+  if(!s.ownedSkins.includes("default"))s.ownedSkins.unshift("default");
+  if(!s.ownedSkins.includes("forest"))s.ownedSkins.push("forest");
+  if(!s.skins.includes("Default Finish"))s.skins.unshift("Default Finish");
+  if(!s.skins.includes("Forest Camo"))s.skins.push("Forest Camo");
+  s.towerSkins=s.towerSkins||{};
+  s.extraLives=s.extraLives||0;
+  s.seasonPass=!!s.seasonPass;
+  s.upgrades={startingCash:0,damage:0,discount:0,...(s.upgrades||{})};
+  s.shopTab=shopTabs.includes(s.shopTab)?s.shopTab:"featured";
+  s.unlockedTowers=[...new Set(s.unlockedTowers||freshSave().unlockedTowers)];
+  s.unlockedBases=[...new Set(s.unlockedBases||freshSave().unlockedBases)];
+  return s;
+}
 function save(){localStorage.setItem(saveKey,JSON.stringify(state));renderAll()}
 function hardReset(){
   cancelAnimationFrame(raf);game=null;last=0;secretBuffer="";
@@ -88,19 +120,19 @@ function renderAll(){
   sanitizeSelection();
   $("#profileLevel").textContent=state.level;$("#coins").textContent=state.coins;$("#gems").textContent=state.gems;$("#xpFill").style.width=Math.min(100,state.xp/xpNeed()*100)+"%";
   $("#crateCount").textContent=state.crates;$("#dailyBtn").disabled=sameDay(state.lastDaily,Date.now());
-  renderHero();renderSetup();renderCollections();renderStats();renderInventory();renderPromos();
+  renderHero();renderSetup();renderCollections();renderStats();renderInventory();renderPromos();renderShop();
 }
 function renderNav(){
-  const items=[["menu","Main Menu"],["play","Play"],["crates","Crates"],["collection","Collection"],["inventory","Inventory"],["codes","Codes"],["stats","Stats"],["settings","Settings"]];
+  const items=[["menu","Main Menu"],["play","Play"],["shop","Shop"],["crates","Crates"],["collection","Collection"],["inventory","Inventory"],["codes","Codes"],["stats","Stats"],["settings","Settings"]];
   $("#nav").innerHTML=items.map(i=>`<button data-nav="${i[0]}">${i[1]}</button>`).join("");
   $$("[data-nav]").forEach(b=>b.onclick=()=>nav(b.dataset.nav));$$("[data-go]").forEach(b=>b.onclick=()=>nav(b.dataset.go));
 }
 function renderHero(){
   $("#heroStats").innerHTML=[["Wins",state.stats.wins],["Kills",state.stats.kills],["Bosses",state.stats.bossesDefeated],["Endless",state.endless?"Unlocked":"Locked"]].map(x=>`<div class="stat-tile"><b>${x[1]}</b><span>${x[0]}</span></div>`).join("");
   $("#featuredCards").innerHTML=[
-    ["Boss Phases","Boss and Mega Boss waves introduce shields, rage speed, and heavy rewards."],
-    ["Spawner Army","Military Base, Barracks, Tank Factory, and Command Center send friendly units down the lane."],
-    ["Persistent Grind","Daily rewards, achievements, crates, XP, coins, skins, and map completions are saved."]
+    ["Coins","Use coins in the Shop for towers, crates, skins, bases, extra lives, and permanent upgrades."],
+    ["Buy Towers","Open the Shop, choose Towers, then buy any locked tower you can afford."],
+    ["Skin Towers","Right-click an owned tower in Inventory, press Add Skin, then use it in a match."]
   ].map(c=>`<div class="card"><h3>${c[0]}</h3><small>${c[1]}</small></div>`).join("");
 }
 function renderSetup(){
@@ -131,7 +163,64 @@ function renderCollections(){
   $("#baseCollection").innerHTML=bases.map(b=>`<div class="card"><h3 class="${rarityClass(b.rarity)}">${b.name}</h3><small>${b.buff}</small><p>${state.unlockedBases.includes(b.id)?"Unlocked":"Locked"}</p></div>`).join("");
 }
 function renderInventory(){
-  $("#inventoryList").innerHTML=[...state.skins.map(x=>["Base Skin",x]),...state.effects.map(x=>["Effect",x]),["Crates",state.crates],["Coins",state.coins],["Gems",state.gems],["Dev Mode",state.devMode?"Active":"Off"]].map(i=>`<div class="card"><h3>${i[0]}</h3><small>${i[1]}</small></div>`).join("");
+  const towerCards=state.unlockedTowers.map(id=>{
+    const t=towers.find(x=>x.id===id), skin=skinById(state.towerSkins[id]||"default");
+    return `<div class="card inventory-tower" data-inventory-tower="${id}">
+      <h3 class="${rarityClass(t.rarity)}">${t.name}</h3>
+      <small>${t.rarity} tower - equipped skin: ${skin.name}</small>
+      <p>Right-click for skin actions</p>
+    </div>`;
+  }).join("");
+  const skinCards=state.ownedSkins.map(id=>{
+    const s=skinById(id);
+    return `<div class="card skin-card"><h3 class="${rarityClass(s.rarity)}">${s.name}</h3><small>${s.rarity} skin - ${skinTone(s)}</small></div>`;
+  }).join("");
+  $("#inventoryList").innerHTML=[
+    `<div class="card wallet-card"><h3>Wallet</h3><small>Coins buy shop items. Gems buy premium bundles.</small><p>${state.coins} coins | ${state.gems} gems | ${state.crates} crates</p></div>`,
+    `<div class="card wallet-card"><h3>Boosts</h3><small>Permanent upgrades and lives</small><p>Lives ${state.extraLives} | Cash +${state.upgrades.startingCash*75} | Damage +${state.upgrades.damage*5}% | Discount ${state.upgrades.discount*4}%</p></div>`,
+    `<div class="card wallet-card"><h3>Season Pass</h3><small>${state.seasonPass?"Active: better crate odds and win bonuses":"Not owned"}</small><p>${state.seasonPass?"Premium rewards enabled":"Buy it in the Shop"}</p></div>`,
+    towerCards,
+    skinCards,
+    ...state.effects.map(x=>`<div class="card"><h3>Effect</h3><small>${x}</small></div>`),
+    `<div class="card"><h3>Dev Mode</h3><small>${state.devMode?"Active":"Off"}</small></div>`
+  ].join("");
+  $$("[data-inventory-tower]").forEach(e=>e.oncontextmenu=ev=>showInventoryMenu(ev,e.dataset.inventoryTower));
+}
+function renderShop(){
+  if(!$("#shopList"))return;
+  $("#shopCoins").textContent=state.coins;$("#shopGems").textContent=state.gems;
+  $$("[data-shop-tab]").forEach(b=>{
+    b.classList.toggle("selected",b.dataset.shopTab===state.shopTab);
+    b.onclick=()=>{state.shopTab=b.dataset.shopTab;renderShop()};
+  });
+  const items=shopItems().filter(i=>i.tab===state.shopTab||i.tab==="all");
+  $("#shopList").innerHTML=items.map(i=>shopCard(i)).join("");
+  $$("[data-buy]").forEach(b=>b.onclick=()=>buyShopItem(b.dataset.buy));
+}
+function shopItems(){
+  const lockedTowers=towers.filter(t=>!state.unlockedTowers.includes(t.id)).map(t=>({id:"tower:"+t.id,tab:"towers",name:t.name,type:"Tower",rarity:t.rarity,desc:t.desc,cost:towerShopCost(t),currency:"coins",owned:false}));
+  const skinItems=skinCatalog.filter(s=>!state.ownedSkins.includes(s.id)).map(s=>({id:"skin:"+s.id,tab:"skins",name:s.name,type:"Skin",rarity:s.rarity,desc:`${skinTone(s)} tower finish`,cost:skinShopCost(s),currency:"coins",owned:false}));
+  return [
+    {id:"crate:basic",tab:"featured",name:"Battle Crate",type:"Crate",rarity:"Rare",desc:"Unlocks towers, bases, skins, effects, coins, or gems.",cost:450,currency:"coins"},
+    {id:"crate:elite",tab:"featured",name:"Elite Crate Bundle",type:"Crates",rarity:"Epic",desc:"Three crates with one bonus skin roll.",cost:8,currency:"gems"},
+    {id:"pass:season",tab:"featured",name:"Season Pass",type:"Pass",rarity:"Legendary",desc:"Win rewards +50%, daily crates +1, and better crate odds.",cost:35,currency:"gems",owned:state.seasonPass},
+    {id:"life:1",tab:"boosts",name:"Extra Life",type:"Consumable",rarity:"Rare",desc:"Automatically saves a lost match once.",cost:650,currency:"coins"},
+    {id:"upgrade:startingCash",tab:"boosts",name:"Start Cash Upgrade",type:"Upgrade",rarity:"Rare",desc:"Start every match with +75 cash per level.",cost:upgradeCost("startingCash"),currency:"coins",owned:state.upgrades.startingCash>=5},
+    {id:"upgrade:damage",tab:"boosts",name:"Damage Upgrade",type:"Upgrade",rarity:"Epic",desc:"All towers deal +5% damage per level.",cost:upgradeCost("damage"),currency:"coins",owned:state.upgrades.damage>=5},
+    {id:"upgrade:discount",tab:"boosts",name:"Build Discount",type:"Upgrade",rarity:"Epic",desc:"Placement and upgrade costs drop by 4% per level.",cost:upgradeCost("discount"),currency:"coins",owned:state.upgrades.discount>=5},
+    ...bases.filter(b=>!state.unlockedBases.includes(b.id)).map(b=>({id:"base:"+b.id,tab:"boosts",name:b.name,type:"Base",rarity:b.rarity,desc:b.buff,cost:baseShopCost(b),currency:"coins"})),
+    ...lockedTowers,
+    ...skinItems
+  ];
+}
+function shopCard(i){
+  const canBuy=!i.owned&&state[i.currency]>=i.cost;
+  return `<div class="card shop-card">
+    <h3 class="${rarityClass(i.rarity)}">${i.name}</h3>
+    <small>${i.type} - ${i.desc}</small>
+    <p>${i.owned?"Owned":`${i.cost} ${i.currency}`}</p>
+    <button class="primary" data-buy="${i.id}" ${!canBuy?"disabled":""}>${i.owned?"Owned":"Buy"}</button>
+  </div>`;
 }
 function renderStats(){
   $("#statsGrid").innerHTML=Object.entries(state.stats).map(([k,v])=>`<div class="stat-tile"><b>${v}</b><span>${label(k)}</span></div>`).join("");
@@ -146,7 +235,8 @@ function startMatch(){
   sanitizeSelection();
   if(selected.loadout.length===0)return;
   const map=maps.find(m=>m.id===selected.map), base=bases.find(b=>b.id===selected.base), diff=difficulties[selected.difficulty];
-  game={map,base,diff,wave:0,cash:state.devMode?999999:base.id==="depot"?720:600,health:base.hp,enemies:[],shots:[],towers:[],units:[],particles:[],numbers:[],pads:map.pads.map(p=>({x:p[0],y:p[1],tower:null})),spawnTimer:0,countdown:4,paused:false,speed:1,selectedTower:null,placing:selected.loadout[0],ended:false,kills:0,bosses:0};
+  const startCash=(base.id==="depot"?720:600)+state.upgrades.startingCash*75;
+  game={map,base,diff,wave:0,cash:state.devMode?999999:startCash,health:base.hp,enemies:[],shots:[],towers:[],units:[],particles:[],numbers:[],pads:map.pads.map(p=>({x:p[0],y:p[1],tower:null})),spawnTimer:0,countdown:4,paused:false,speed:1,selectedTower:null,placing:selected.loadout[0],ended:false,kills:0,bosses:0};
   nav("match");renderTowerBar();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
 }
 function loop(ts){if(!game)return;const dt=Math.min(.05,(ts-last)/1000)*(game.paused?0:game.speed);last=ts;update(dt);draw();raf=requestAnimationFrame(loop)}
@@ -156,7 +246,10 @@ function update(dt){
   if(game.countdown>0){game.countdown-=dt;if(game.countdown<=0)nextWave();updateHud();return}
   spawn(dt);moveEnemies(dt);updateTowers(dt);updateUnits(dt);updateParticles(dt);updateHud();
   if(game.enemies.length===0&&game.spawnTimer<=0&&game.toSpawn<=0){if(game.wave>=game.diff.waves)endMatch(true);else game.countdown=$("#autoskip").checked?1.2:9}
-  if(game.health<=0)endMatch(false);
+  if(game.health<=0){
+    if(state.extraLives>0){state.extraLives--;game.health=Math.ceil(game.base.hp*.45);burst(140,120,34,"#f2c14e");save();showBoss("EXTRA LIFE USED")}
+    else endMatch(false);
+  }
 }
 function nextWave(){
   game.wave++;const boss=game.wave%5===0, mega=game.wave%15===0, flying=game.wave%4===0, stealth=game.wave%7===0;
@@ -190,7 +283,7 @@ function updateTowers(dt){
   });
 }
 function hit(t,e){
-  const dmg=t.dmg*(1+t.level*.55)*(game.base.id==="command"?1.12:1);
+  const dmg=t.dmg*(1+t.level*.55)*(game.base.id==="command"?1.12:1)*(1+state.upgrades.damage*.05);
   game.shots.push({x:t.x,y:t.y,tx:e.x,ty:e.y,life:.16,color:t.type==="laser"?"#ff4fd8":t.type==="freeze"?"#8be4ff":"#f2c14e"});
   if(t.type==="splash"){game.enemies.forEach(n=>{if(dist(e,n)<55)towerDamage(n,dmg*.75)})}
   else {towerDamage(e,dmg)}
@@ -209,17 +302,20 @@ function updateUnits(dt){
 }
 function updateParticles(dt){["shots","particles","numbers"].forEach(k=>game[k]=game[k].filter(o=>(o.life-=dt)>0))}
 function placeAt(x,y){
-  const pad=game.pads.find(p=>!p.tower&&Math.hypot(p.x-x,p.y-y)<34), def=towers.find(t=>t.id===game.placing);if(!pad||!def||game.cash<def.cost)return;
-  const t={...def,x:pad.x,y:pad.y,level:0,cool:0,pad};pad.tower=t;game.towers.push(t);game.cash-=def.cost;state.stats.towersPlaced++;game.selectedTower=t;renderUpgrade();
+  const pad=game.pads.find(p=>!p.tower&&Math.hypot(p.x-x,p.y-y)<34), def=towers.find(t=>t.id===game.placing);if(!pad||!def)return;
+  const cost=buildCost(def.cost);
+  if(game.cash<cost)return;
+  const t={...def,x:pad.x,y:pad.y,level:0,cool:0,pad,skin:state.towerSkins[def.id]||"default"};pad.tower=t;game.towers.push(t);game.cash-=cost;state.stats.towersPlaced++;game.selectedTower=t;renderUpgrade();
 }
-function upgrade(t){const cost=Math.round(t.cost*(.65+t.level*.55));if(t.level>=5||game.cash<cost)return;game.cash-=cost;t.level++;renderUpgrade();burst(t.x,t.y,18,"#41d18b")}
+function upgrade(t){const cost=upgradeBuildCost(t);if(t.level>=5||game.cash<cost)return;game.cash-=cost;t.level++;renderUpgrade();burst(t.x,t.y,18,"#41d18b")}
 function sell(t){game.cash+=Math.round(t.cost*(.45+t.level*.2));t.pad.tower=null;remove(game.towers,t);game.selectedTower=null;renderUpgrade()}
 function endMatch(win){
   game.ended=true;cancelAnimationFrame(raf);
-  const coin=win?Math.round(game.map.reward*game.diff.mult+game.wave*12):Math.round(game.wave*8), xp=win?80+game.wave*8:25+game.wave*3;
-  state.coins+=coin;addXP(xp);if(win){state.stats.wins++;state.crates++;state.mapWins[game.map.id]=true;if(selected.difficulty==="Normal")state.endless=true}
+  const passMult=state.seasonPass&&win?1.5:1;
+  const coin=win?Math.round((game.map.reward*game.diff.mult+game.wave*12)*passMult):Math.round(game.wave*8), xp=win?Math.round((80+game.wave*8)*passMult):25+game.wave*3;
+  state.coins+=coin;addXP(xp);if(win){state.stats.wins++;state.crates+=state.seasonPass?2:1;state.mapWins[game.map.id]=true;if(selected.difficulty==="Normal")state.endless=true}
   checkAchievements();save();
-  showModal(win?"Victory":"Defeat",`Wave reached: ${game.wave}<br>Coins earned: ${coin}<br>XP earned: ${xp}<br>Crates earned: ${win?1:0}<br>Bosses defeated: ${game.bosses}`);
+  showModal(win?"Victory":"Defeat",`Wave reached: ${game.wave}<br>Coins earned: ${coin}<br>XP earned: ${xp}<br>Crates earned: ${win?(state.seasonPass?2:1):0}<br>Bosses defeated: ${game.bosses}`);
   nav("menu");
 }
 function checkAchievements(){achievements.forEach(a=>{if(!state.achievements[a.id]&&a.check(state)){state.achievements[a.id]=true;state.crates+=a.reward}})}
@@ -235,14 +331,16 @@ function drawPath(){ctx.strokeStyle="#2c2421";ctx.lineWidth=52;ctx.lineJoin="rou
 function pathLine(){ctx.beginPath();game.map.path.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]))}
 function drawPad(p){ctx.fillStyle=p.tower?"#273238":"rgba(255,255,255,.18)";ctx.strokeStyle=p.tower?"#41d18b":"#d7e2dd";ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,30,0,Math.PI*2);ctx.fill();ctx.stroke()}
 function drawTower(t){
-  const c=color(t.rarity), x=t.x, y=t.y, size=22+t.level*.9;
+  const skin=skinById(t.skin||state.towerSkins[t.id]||"default");
+  const c=skin.id==="default"?color(t.rarity):skin.glow, x=t.x, y=t.y, size=22+t.level*.9;
   if(t===game.selectedTower){ctx.strokeStyle="rgba(255,255,255,.75)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,t.range||45,0,Math.PI*2);ctx.stroke()}
   ctx.save();
   ctx.shadowColor=c;ctx.shadowBlur=12;
-  ctx.fillStyle="#121719";ctx.strokeStyle=c;ctx.lineWidth=3;
+  ctx.fillStyle=skin.colors[0];ctx.strokeStyle=c;ctx.lineWidth=3;
   ctx.beginPath();ctx.arc(x,y,size+8,0,Math.PI*2);ctx.fill();ctx.stroke();
+  drawSkinPattern(skin,x,y,size);
   ctx.shadowBlur=0;
-  ctx.fillStyle=c;ctx.strokeStyle="#07120d";ctx.lineWidth=3;
+  ctx.fillStyle=skin.colors[1];ctx.strokeStyle="#07120d";ctx.lineWidth=3;
   if(t.type==="spawner"){
     ctx.fillRect(x-20,y-16,40,32);ctx.strokeRect(x-20,y-16,40,32);
     ctx.fillStyle="#d9e5e1";ctx.fillRect(x-13,y-6,9,12);ctx.fillRect(x+4,y-6,9,12);
@@ -279,6 +377,32 @@ function drawTower(t){
   drawTowerLabel(t,x,y);
   ctx.restore();
 }
+function drawSkinPattern(skin,x,y,size){
+  if(skin.id==="default")return;
+  ctx.save();ctx.strokeStyle=skin.colors[1];ctx.fillStyle=skin.colors[1];ctx.lineWidth=2;ctx.globalAlpha=.7;
+  if(skin.pattern==="stripe"){
+    for(let i=-18;i<=18;i+=12){ctx.beginPath();ctx.moveTo(x+i,y-size-1);ctx.lineTo(x+i+18,y+size+1);ctx.stroke()}
+  }else if(skin.pattern==="plate"){
+    ctx.strokeRect(x-18,y-18,36,36);ctx.strokeRect(x-10,y-10,20,20);
+  }else if(skin.pattern==="crystal"){
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*30,y+Math.sin(a)*30);ctx.stroke()}
+  }else if(skin.pattern==="flame"){
+    for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*9,y+22);ctx.quadraticCurveTo(x+i*12,y,x+i*4,y-19);ctx.stroke()}
+  }else if(skin.pattern==="toxic"){
+    for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(x-16+i*8,y+(i%2?10:-8),3+i%2,0,Math.PI*2);ctx.fill()}
+  }else if(skin.pattern==="stars"){
+    for(let i=0;i<7;i++){ctx.fillRect(x-18+Math.random()*36,y-18+Math.random()*36,2,2)}
+  }else if(skin.pattern==="halo"){
+    ctx.beginPath();ctx.arc(x,y,34,0,Math.PI*2);ctx.stroke();
+  }else if(skin.pattern==="scale"){
+    for(let yy=-14;yy<=14;yy+=9)for(let xx=-14;xx<=14;xx+=9){ctx.beginPath();ctx.arc(x+xx,y+yy,5,Math.PI,0);ctx.stroke()}
+  }else if(skin.pattern==="prism"){
+    ctx.beginPath();ctx.moveTo(x,y-28);ctx.lineTo(x+24,y+12);ctx.lineTo(x-24,y+12);ctx.closePath();ctx.stroke();
+  }else if(skin.pattern==="glitch"){
+    for(let i=0;i<5;i++)ctx.fillRect(x-22+Math.random()*44,y-20+Math.random()*40,14,3);
+  }
+  ctx.restore();
+}
 function drawUpgradePips(t,x,y,size){
   for(let i=0;i<5;i++){
     ctx.fillStyle=i<t.level?"#f2c14e":"#263134";
@@ -303,8 +427,8 @@ function drawNumber(n){ctx.globalAlpha=n.life/.55;ctx.fillStyle="#fff";ctx.fillT
 function bar(x,y,w,h,p,c){ctx.fillStyle="#111";ctx.fillRect(x,y,w,h);ctx.fillStyle=c;ctx.fillRect(x,y,w*Math.max(0,p),h)}
 function burst(x,y,n,c){if(state.settings.reducedFx)return;for(let i=0;i<n;i++)game.particles.push({x:x+(Math.random()-.5)*30,y:y+(Math.random()-.5)*30,r:2+Math.random()*5,c,life:.3+Math.random()*.5})}
 
-function renderTowerBar(){$("#towerBar").innerHTML=selected.loadout.map(id=>{const t=towers.find(x=>x.id===id);return `<button data-place="${id}">${t.name}<br><small>$${t.cost}</small></button>`}).join("");$$("[data-place]").forEach(b=>b.onclick=()=>{game.placing=b.dataset.place;$$("[data-place]").forEach(x=>x.classList.toggle("selected",x===b))})}
-function renderUpgrade(){const p=$("#upgradePanel");const t=game?.selectedTower;if(!t){p.classList.add("hidden");return}p.classList.remove("hidden");const cost=Math.round(t.cost*(.65+t.level*.55));p.innerHTML=`<h3>${t.name} Lv.${t.level+1}</h3><small>${t.type==="spawner"?"Unit: "+t.unit:"Damage "+Math.round(t.dmg*(1+t.level*.55))+" Range "+Math.round(t.range)}</small><button id="upBtn" ${t.level>=5?"disabled":""}>Upgrade $${cost}</button><button id="sellBtn">Sell</button>`;$("#upBtn").onclick=()=>upgrade(t);$("#sellBtn").onclick=()=>sell(t)}
+function renderTowerBar(){$("#towerBar").innerHTML=selected.loadout.map(id=>{const t=towers.find(x=>x.id===id);return `<button data-place="${id}">${t.name}<br><small>$${buildCost(t.cost)}</small></button>`}).join("");$$("[data-place]").forEach(b=>b.onclick=()=>{game.placing=b.dataset.place;$$("[data-place]").forEach(x=>x.classList.toggle("selected",x===b))})}
+function renderUpgrade(){const p=$("#upgradePanel");const t=game?.selectedTower;if(!t){p.classList.add("hidden");return}p.classList.remove("hidden");const cost=upgradeBuildCost(t);const skin=skinById(t.skin||"default");p.innerHTML=`<h3>${t.name} Lv.${t.level+1}</h3><small>${t.type==="spawner"?"Unit: "+t.unit:"Damage "+Math.round(t.dmg*(1+t.level*.55)*(1+state.upgrades.damage*.05))+" Range "+Math.round(t.range)}<br>Skin: ${skin.name}</small><button id="upBtn" ${t.level>=5?"disabled":""}>Upgrade $${cost}</button><button id="sellBtn">Sell</button>`;$("#upBtn").onclick=()=>upgrade(t);$("#sellBtn").onclick=()=>sell(t)}
 function updateHud(){$("#hudMap").textContent=game.map.name;$("#hudWave").textContent=`Wave ${game.wave}/${game.diff.waves===999?"Endless":game.diff.waves}`;$("#hudCash").textContent="$"+Math.round(game.cash);$("#hudHealth").textContent=Math.max(0,Math.round(game.health));$("#hudCountdown").textContent=Math.max(0,Math.ceil(game.countdown))}
 function showBoss(txt){const b=$("#bossIntro");b.textContent=txt;b.classList.remove("hidden");setTimeout(()=>b.classList.add("hidden"),1400)}
 
@@ -314,13 +438,73 @@ function openCrate(){
 }
 function rollReward(){
   let n=Math.random(), acc=0, rarity="Common";for(const r of rarities){acc+=r[1];if(n<=acc){rarity=r[0];break}}
+  if(state.seasonPass&&Math.random()<.18)rarity=upgradeRarity(rarity);
   const pool=[...towers.filter(t=>t.rarity===rarity&&!state.unlockedTowers.includes(t.id)).map(t=>({type:"Tower",name:t.name,id:t.id,rarity})),...bases.filter(b=>b.rarity===rarity&&!state.unlockedBases.includes(b.id)).map(b=>({type:"Base",name:b.name,id:b.id,rarity}))];
-  if(pool.length&&Math.random()<.72)return pool[Math.floor(Math.random()*pool.length)];
-  const bonus=Math.round(({Common:100,Rare:220,Epic:480,Legendary:950,Mythic:2200})[rarity]*(.8+Math.random()*.7));
-  return Math.random()<.5?{type:"Currency",name:`${bonus} Coins`,coins:bonus,rarity}:{type:"Skin",name:`${rarity} ${["Base Skin","Tracer FX","Explosion FX"][Math.floor(Math.random()*3)]}`,rarity};
+  if(pool.length&&Math.random()<.58)return pool[Math.floor(Math.random()*pool.length)];
+  const unopenedSkins=skinCatalog.filter(s=>s.rarity===rarity&&!state.ownedSkins.includes(s.id));
+  if(unopenedSkins.length&&Math.random()<.62){const s=unopenedSkins[Math.floor(Math.random()*unopenedSkins.length)];return {type:"Skin",name:s.name,id:s.id,rarity:s.rarity}}
+  const effects=["Meteor Impact FX","Aurora Beam FX","Thunder Pop FX","Gold Shell Tracer","Void Spark Burst","Crystal Freeze Ring","Toxic Bubble Trail"];
+  if(Math.random()<.28)return {type:"Effect",name:`${rarity} ${effects[Math.floor(Math.random()*effects.length)]}`,rarity};
+  const bonus=Math.round(({Common:120,Rare:260,Epic:560,Legendary:1150,Mythic:2600})[rarity]*(.8+Math.random()*.7));
+  return Math.random()<.8?{type:"Currency",name:`${bonus} Coins`,coins:bonus,rarity}:{type:"Currency",name:`${Math.max(1,Math.round(bonus/170))} Gems`,gems:Math.max(1,Math.round(bonus/170)),rarity};
 }
-function applyReward(r){if(r.type==="Tower")state.unlockedTowers.push(r.id);else if(r.type==="Base")state.unlockedBases.push(r.id);else if(r.type==="Currency")state.coins+=r.coins;else if(r.name.includes("Skin"))state.skins.push(r.name);else state.effects.push(r.name)}
-function daily(){if(sameDay(state.lastDaily,Date.now()))return;state.lastDaily=Date.now();state.coins+=250;state.gems+=5;state.crates++;save();showModal("Daily Reward","250 coins<br>5 gems<br>1 crate")}
+function applyReward(r){
+  if(r.type==="Tower")unlock(state.unlockedTowers,r.id);
+  else if(r.type==="Base")unlock(state.unlockedBases,r.id);
+  else if(r.type==="Currency"){state.coins+=r.coins||0;state.gems+=r.gems||0}
+  else if(r.type==="Skin")unlockSkin(r.id);
+  else state.effects.push(r.name);
+}
+function buyShopItem(id){
+  const item=shopItems().find(i=>i.id===id), msg=$("#shopMessage");
+  if(!item||item.owned)return;
+  if(state[item.currency]<item.cost){msg.textContent=`Need ${item.cost} ${item.currency}.`;return}
+  state[item.currency]-=item.cost;
+  const [kind,value]=id.split(":");
+  if(kind==="tower")unlock(state.unlockedTowers,value);
+  if(kind==="base")unlock(state.unlockedBases,value);
+  if(kind==="skin")unlockSkin(value);
+  if(kind==="crate"&&value==="basic")state.crates++;
+  if(kind==="crate"&&value==="elite"){state.crates+=3;const bonus=skinCatalog.filter(s=>!state.ownedSkins.includes(s.id))[0];if(bonus)unlockSkin(bonus.id)}
+  if(kind==="life")state.extraLives++;
+  if(kind==="pass")state.seasonPass=true;
+  if(kind==="upgrade"&&state.upgrades[value]<5)state.upgrades[value]++;
+  msg.textContent=`Purchased ${item.name}.`;
+  save();
+}
+function unlockSkin(id){
+  const skin=skinById(id);
+  unlock(state.ownedSkins,skin.id);
+  if(!state.skins.includes(skin.name))state.skins.push(skin.name);
+}
+function showInventoryMenu(ev,towerId){
+  ev.preventDefault();
+  const menu=$("#contextMenu"), t=towers.find(x=>x.id===towerId);
+  menu.innerHTML=`<button data-add-skin="${towerId}">Add Skin</button><small>${t.name}</small>`;
+  menu.style.left=ev.clientX+"px";menu.style.top=ev.clientY+"px";menu.classList.remove("hidden");
+  $("[data-add-skin]").onclick=()=>{cycleTowerSkin(towerId);menu.classList.add("hidden")};
+}
+function cycleTowerSkin(towerId){
+  const ids=state.ownedSkins.length?state.ownedSkins:["default"], current=state.towerSkins[towerId]||"default";
+  const next=ids[(ids.indexOf(current)+1+ids.length)%ids.length];
+  state.towerSkins[towerId]=next;
+  save();
+  const t=towers.find(x=>x.id===towerId), s=skinById(next);
+  showModal("Skin Equipped",`${t.name}<br>${s.name}`);
+}
+function skinById(id){return skinCatalog.find(s=>s.id===id)||skinCatalog[0]}
+function skinTone(s){return `${s.colors[0]} / ${s.colors[1]} ${s.pattern}`}
+function towerShopCost(t){return Math.round(t.cost*({Common:4,Rare:5,Epic:6,Legendary:7,Mythic:8})[t.rarity])}
+function baseShopCost(b){return ({Common:450,Rare:950,Epic:1800,Legendary:3200,Mythic:5200})[b.rarity]||900}
+function skinShopCost(s){return ({Common:300,Rare:700,Epic:1350,Legendary:2400,Mythic:4200})[s.rarity]}
+function upgradeCost(k){return state.upgrades[k]>=5?0:Math.round(850*Math.pow(1.65,state.upgrades[k]))}
+function buildCost(n){return Math.max(1,Math.round(n*(1-state.upgrades.discount*.04)))}
+function upgradeBuildCost(t){return buildCost(Math.round(t.cost*(.65+t.level*.55)))}
+function upgradeRarity(r){
+  const order=["Common","Rare","Epic","Legendary","Mythic"], i=order.indexOf(r);
+  return order[Math.min(order.length-1,i+1)];
+}
+function daily(){if(sameDay(state.lastDaily,Date.now()))return;state.lastDaily=Date.now();state.coins+=250;state.gems+=5;state.crates+=state.seasonPass?2:1;save();showModal("Daily Reward",`250 coins<br>5 gems<br>${state.seasonPass?2:1} crate${state.seasonPass?"s":""}`)}
 function redeemPromo(){
   const input=$("#promoInput"), msg=$("#promoMessage"), code=(input.value||"").trim().toUpperCase().replace(/\s+/g,"");
   if(!code){msg.textContent="Enter a code first.";return}
@@ -334,6 +518,7 @@ function redeemPromo(){
 function activateDevMode(){
   state.devMode=true;state.coins=999999999;state.gems=999999;state.crates=99;state.endless=true;
   towers.forEach(t=>unlock(state.unlockedTowers,t.id));bases.forEach(b=>unlock(state.unlockedBases,b.id));
+  skinCatalog.forEach(s=>unlockSkin(s.id));state.extraLives=99;state.seasonPass=true;state.upgrades={startingCash:5,damage:5,discount:5};
   save();showModal("Testing Dev Mode","Infinite coins are enabled. Match health is protected while dev mode is active.");
 }
 function unlock(list,id){if(!list.includes(id))list.push(id)}
@@ -351,4 +536,5 @@ $("#volume").oninput=e=>{state.settings.volume=+e.target.value;save()};$("#reduc
 $("#volume").value=state.settings.volume;$("#reducedFx").checked=state.settings.reducedFx;
 let secretBuffer="";
 document.addEventListener("keydown",e=>{if(e.target&&["INPUT","TEXTAREA"].includes(e.target.tagName))return;secretBuffer=(secretBuffer+e.key.toLowerCase()).slice(-12);if(secretBuffer.endsWith("mustardmango"))activateDevMode()});
+document.addEventListener("click",e=>{if(!e.target.closest("#contextMenu"))$("#contextMenu").classList.add("hidden")});
 renderNav();renderAll();

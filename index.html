@@ -20,8 +20,11 @@
       <div class="profile-card">
         <div class="row"><span>Level</span><b id="profileLevel">1</b></div>
         <div class="xpbar"><i id="xpFill"></i></div>
-        <div class="row"><span>Coins</span><b id="coins">0</b></div>
-        <div class="row"><span>Gems</span><b id="gems">0</b></div>
+        <div class="wallet">
+          <div class="wallet-label">Wallet</div>
+          <div class="row"><span>Coins for shop</span><b id="coins">0</b></div>
+          <div class="row"><span>Gems for premium buys</span><b id="gems">0</b></div>
+        </div>
         <button id="dailyBtn" class="primary">Daily Reward</button>
       </div>
     </aside>
@@ -104,6 +107,24 @@
         </div>
       </section>
 
+      <section id="shop" class="screen">
+        <div class="setup">
+          <div>
+            <h2>Shop</h2>
+            <p>Spend coins on towers, crates, extra lives, upgrades, bases, skins, and the season pass.</p>
+          </div>
+          <div class="crate-count">Coins <b id="shopCoins">0</b> | Gems <b id="shopGems">0</b></div>
+        </div>
+        <div id="shopMessage" class="promo-message"></div>
+        <div class="shop-tabs">
+          <button class="selected" data-shop-tab="featured">Featured</button>
+          <button data-shop-tab="towers">Towers</button>
+          <button data-shop-tab="skins">Skins</button>
+          <button data-shop-tab="boosts">Boosts</button>
+        </div>
+        <div id="shopList" class="grid three"></div>
+      </section>
+
       <section id="collection" class="screen">
         <h2>Tower Collection</h2>
         <div id="towerCollection" class="grid four"></div>
@@ -112,7 +133,12 @@
       </section>
 
       <section id="inventory" class="screen">
-        <h2>Inventory</h2>
+        <div class="setup">
+          <div>
+            <h2>Inventory</h2>
+            <p>Right-click an owned tower and choose Add Skin to cycle an unlocked skin onto it.</p>
+          </div>
+        </div>
         <div id="inventoryList" class="grid three"></div>
       </section>
 
@@ -157,6 +183,8 @@
       <button class="primary" id="modalClose">Continue</button>
     </div>
   </div>
+
+  <div id="contextMenu" class="context-menu hidden"></div>
 
   <script src="game.js"></script>
 </body>
