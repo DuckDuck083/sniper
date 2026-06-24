@@ -85,6 +85,7 @@ function addXP(n){state.xp+=n;while(state.xp>=xpNeed()){state.xp-=xpNeed();state
 function nav(to){$$(".screen").forEach(x=>x.classList.remove("active"));$("#"+to).classList.add("active");if(to==="match")return;renderAll()}
 
 function renderAll(){
+  sanitizeSelection();
   $("#profileLevel").textContent=state.level;$("#coins").textContent=state.coins;$("#gems").textContent=state.gems;$("#xpFill").style.width=Math.min(100,state.xp/xpNeed()*100)+"%";
   $("#crateCount").textContent=state.crates;$("#dailyBtn").disabled=sameDay(state.lastDaily,Date.now());
   renderHero();renderSetup();renderCollections();renderStats();renderInventory();renderPromos();
@@ -103,16 +104,28 @@ function renderHero(){
   ].map(c=>`<div class="card"><h3>${c[0]}</h3><small>${c[1]}</small></div>`).join("");
 }
 function renderSetup(){
+  sanitizeSelection();
   $("#mapSelect").innerHTML=maps.map(m=>`<div class="choice ${selected.map===m.id?"selected":""}" data-map="${m.id}"><b>${m.name}</b><small>${m.reward} coin clear reward</small></div>`).join("");
   $("#difficultySelect").innerHTML=Object.keys(difficulties).map(d=>`<div class="choice ${selected.difficulty===d?"selected":""}" data-diff="${d}"><b>${d}</b><small>${d==="Endless"&&!state.endless?"Locked until normal clear":difficulties[d].waves+" waves"}</small></div>`).join("");
   $("#baseSelect").innerHTML=bases.map(b=>`<div class="choice ${selected.base===b.id?"selected":""} ${!state.unlockedBases.includes(b.id)?"locked":""}" data-base="${b.id}"><b>${b.name}</b><small>${b.rarity} - ${b.buff}</small></div>`).join("");
-  $("#loadoutSelect").innerHTML=towers.map(t=>`<button class="${selected.loadout.includes(t.id)?"selected":""}" data-tower="${t.id}" ${!state.unlockedTowers.includes(t.id)?"disabled":""}>${t.name}<br><small>${t.rarity} $${t.cost}</small></button>`).join("");
+  $("#loadoutSelect").innerHTML=towers.map(t=>{const picked=selected.loadout.includes(t.id), unlocked=state.unlockedTowers.includes(t.id);return `<button class="${picked?"selected":""}" data-tower="${t.id}" ${!unlocked&&!picked?"disabled":""}>${t.name}<br><small>${unlocked?t.rarity+" $"+t.cost:"Locked"}</small></button>`}).join("");
   $$("[data-map]").forEach(e=>e.onclick=()=>{selected.map=e.dataset.map;renderSetup()});
   $$("[data-diff]").forEach(e=>e.onclick=()=>{if(e.dataset.diff==="Endless"&&!state.endless)return;selected.difficulty=e.dataset.diff;renderSetup()});
   $$("[data-base]").forEach(e=>e.onclick=()=>{if(state.unlockedBases.includes(e.dataset.base)){selected.base=e.dataset.base;renderSetup()}});
   $$("[data-tower]").forEach(e=>e.onclick=()=>toggleLoadout(e.dataset.tower));
 }
-function toggleLoadout(id){let l=selected.loadout;if(l.includes(id))l.splice(l.indexOf(id),1);else if(l.length<8)l.push(id);renderSetup()}
+function sanitizeSelection(){
+  if(!state.unlockedBases.includes(selected.base))selected.base="standard";
+  if(selected.difficulty==="Endless"&&!state.endless)selected.difficulty="Normal";
+  selected.loadout=selected.loadout.filter(id=>state.unlockedTowers.includes(id));
+  if(selected.loadout.length===0)selected.loadout=freshSelection().loadout.filter(id=>state.unlockedTowers.includes(id));
+}
+function toggleLoadout(id){
+  let l=selected.loadout;
+  if(l.includes(id))l.splice(l.indexOf(id),1);
+  else if(state.unlockedTowers.includes(id)&&l.length<8)l.push(id);
+  renderSetup();
+}
 function renderCollections(){
   $("#towerCollection").innerHTML=towers.map(t=>`<div class="card"><h3 class="${rarityClass(t.rarity)}">${t.name}</h3><small>${t.desc}</small><p>${state.unlockedTowers.includes(t.id)?"Unlocked":"Locked"}</p></div>`).join("");
   $("#baseCollection").innerHTML=bases.map(b=>`<div class="card"><h3 class="${rarityClass(b.rarity)}">${b.name}</h3><small>${b.buff}</small><p>${state.unlockedBases.includes(b.id)?"Unlocked":"Locked"}</p></div>`).join("");
@@ -130,6 +143,7 @@ function renderPromos(){
 }
 
 function startMatch(){
+  sanitizeSelection();
   if(selected.loadout.length===0)return;
   const map=maps.find(m=>m.id===selected.map), base=bases.find(b=>b.id===selected.base), diff=difficulties[selected.difficulty];
   game={map,base,diff,wave:0,cash:state.devMode?999999:base.id==="depot"?720:600,health:base.hp,enemies:[],shots:[],towers:[],units:[],particles:[],numbers:[],pads:map.pads.map(p=>({x:p[0],y:p[1],tower:null})),spawnTimer:0,countdown:4,paused:false,speed:1,selectedTower:null,placing:selected.loadout[0],ended:false,kills:0,bosses:0};
